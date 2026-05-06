@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Atoms</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #1c1917; --ink2: #57534e; --ink3: #a8a29e;
+  --paper: #faf7f2; --paper2: #f5f0e8; --paper3: #ede8de;
+  --border: rgba(28,25,23,0.1); --border2: rgba(28,25,23,0.2);
+  --gold: #92400e; --gold-bg: #fef3c7; --gold-light: #fffbeb;
+  --teal: #0f5c4e; --teal-bg: #ecfdf5;
+  --red: #991b1b; --red-bg: #fef2f2;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 12px;
+}
+body { font-family: var(--sans); background: var(--paper); color: var(--ink); min-height: 100vh; font-size: 15px; line-height: 1.65; }
+.hidden { display: none !important; }
+.page { max-width: 600px; margin: 0 auto; padding: 48px 24px 80px; }
+.page-wide { max-width: 900px; margin: 0 auto; padding: 40px 28px 80px; }
+.top-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; }
+.top-mark-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--gold); }
+.top-mark-text { font-size: 12px; font-weight: 500; color: var(--ink3); letter-spacing: 0.08em; text-transform: uppercase; }
+.form-hero { margin-bottom: 36px; }
+.form-hero h1 { font-family: var(--serif); font-size: 36px; font-weight: 700; color: var(--ink); line-height: 1.2; margin-bottom: 10px; }
+.form-hero h1 em { font-style: italic; color: var(--gold); }
+.form-hero p { font-size: 15px; color: var(--ink2); line-height: 1.7; }
+.atom-hint { background: var(--gold-light); border: 1px solid rgba(146,64,14,0.15); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 32px; font-size: 13px; color: var(--gold); line-height: 1.6; }
+.atom-hint strong { font-weight: 500; display: block; margin-bottom: 4px; }
+.field { margin-bottom: 22px; }
+.field label { display: block; font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 7px; }
+.field label span { font-weight: 300; color: var(--ink3); font-size: 12px; margin-left: 6px; }
+.field select, .field input, .field textarea { width: 100%; font-family: var(--sans); font-size: 15px; color: var(--ink); background: white; border: 1.5px solid var(--border2); border-radius: 8px; padding: 12px 14px; outline: none; transition: border-color 0.15s; -webkit-appearance: none; appearance: none; }
+.field select:focus, .field input:focus, .field textarea:focus { border-color: var(--gold); }
+.field textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+.field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2392400e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+.source-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 420px) { .source-grid { grid-template-columns: repeat(2, 1fr); } }
+.source-btn { padding: 9px 8px; border: 1.5px solid var(--border2); border-radius: 8px; background: white; font-family: var(--sans); font-size: 12px; color: var(--ink2); cursor: pointer; text-align: center; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.source-btn:hover { border-color: var(--gold); color: var(--gold); }
+.source-btn.selected { border-color: var(--gold); background: var(--gold-light); color: var(--gold); font-weight: 500; }
+.source-icon { font-size: 14px; }
+.atom-block { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+.atom-block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.atom-block-num { font-size: 11px; font-weight: 500; color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; }
+.atom-remove { font-size: 18px; color: var(--ink3); cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.atom-remove:hover { color: var(--red); background: var(--red-bg); }
+.add-atom-btn { width: 100%; padding: 11px; border: 1.5px dashed var(--border2); border-radius: 8px; background: transparent; font-family: var(--sans); font-size: 13px; color: var(--ink3); cursor: pointer; transition: all 0.12s; }
+.add-atom-btn:hover { border-color: var(--gold); color: var(--gold); }
+.submit-btn { width: 100%; padding: 15px; background: var(--ink); color: var(--paper); border: none; border-radius: 10px; font-family: var(--serif); font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 28px; transition: opacity 0.15s; }
+.submit-btn:hover { opacity: 0.87; }
+.submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.success-screen { text-align: center; padding: 60px 24px; }
+.success-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--teal-bg); display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 28px; }
+.success-screen h2 { font-family: var(--serif); font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+.success-screen p { font-size: 15px; color: var(--ink2); margin-bottom: 28px; }
+.success-atoms { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; text-align: left; margin-bottom: 28px; }
+.success-atom { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.success-atom:last-child { border-bottom: none; padding-bottom: 0; }
+.success-atom-label { font-size: 11px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; font-weight: 500; }
+.success-atom-text { font-size: 14px; color: var(--ink); }
+.submit-another-btn { padding: 11px 24px; background: white; border: 1.5px solid var(--border2); border-radius: 8px; font-family: var(--sans); font-size: 14px; font-weight: 500; color: var(--ink); cursor: pointer; }
+.submit-another-btn:hover { background: var(--paper2); }
+.admin-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; gap: 20px; flex-wrap: wrap; }
+.admin-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+.admin-header p { font-size: 13px; color: var(--ink3); }
+.week-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
+.week-tab { padding: 7px 14px; border: 1.5px solid var(--border2); border-radius: 20px; background: white; font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--ink2); cursor: pointer; transition: all 0.12s; }
+.week-tab:hover { border-color: var(--gold); color: var(--gold); }
+.week-tab.active { border-color: var(--gold); background: var(--gold-light); color: var(--gold); }
+.submissions-grid { display: grid; gap: 10px; margin-bottom: 28px; }
+.submission-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+.submission-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.submission-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--paper3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--ink2); flex-shrink: 0; }
+.submission-name { font-size: 14px; font-weight: 500; color: var(--ink); }
+.submission-time { font-size: 12px; color: var(--ink3); }
+.submission-source { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: var(--gold-light); color: var(--gold); font-weight: 500; }
+.atom-row { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.atom-row:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.atom-label { font-size: 10px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; margin-bottom: 2px; }
+.atom-text { font-size: 13px; color: var(--ink); line-height: 1.5; }
+.atom-why { font-size: 12px; color: var(--ink2); margin-top: 3px; font-style: italic; }
+.no-submissions { text-align: center; padding: 48px 24px; color: var(--ink3); font-size: 14px; background: white; border: 1px dashed var(--border2); border-radius: var(--radius); }
+.digest-bar { background: var(--ink); border-radius: var(--radius); padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.digest-bar-info h3 { font-family: var(--serif); font-size: 17px; color: var(--paper); margin-bottom: 3px; }
+.digest-bar-info p { font-size: 12px; color: rgba(250,247,242,0.6); }
+.digest-generate-btn { padding: 10px 20px; background: var(--gold); border: none; border-radius: 8px; font-family: var(--sans); font-size: 13px; font-weight: 500; color: white; cursor: pointer; white-space: nowrap; transition: opacity 0.12s; }
+.digest-generate-btn:hover { opacity: 0.88; }
+.digest-generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.digest-output { display: none; background: white; border: 1.5px solid var(--border2); border-radius: var(--radius); overflow: hidden; }
+.digest-output-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.digest-output-head span { font-size: 13px; font-weight: 500; color: var(--ink); }
+.copy-btn { padding: 7px 14px; background: var(--teal); border: none; border-radius: 6px; font-family: var(--sans); font-size: 12px; font-weight: 500; color: white; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.copy-btn:hover { opacity: 0.85; }
+.digest-generating { padding: 32px 18px; text-align: center; color: var(--ink3); font-size: 13px; display: none; }
+.digest-text { padding: 18px; font-size: 14px; line-height: 1.8; color: var(--ink); white-space: pre-wrap; font-family: var(--sans); min-height: 120px; }
+.mini-spin { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
+.stat-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+.stat-num { font-size: 28px; font-weight: 700; font-family: var(--serif); color: var(--ink); letter-spacing: -1px; line-height: 1; margin-bottom: 4px; }
+.stat-label { font-size: 11px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+.admin-link { position: fixed; bottom: 20px; right: 20px; width: 36px; height: 36px; border-radius: 50%; background: var(--paper3); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--ink3); transition: all 0.12s; }
+.admin-link:hover { background: var(--ink); color: var(--paper); }
+.team-manager { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 24px; }
+.team-manager h3 { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 12px; }
+.team-members { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.member-chip { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--paper2); border: 1px solid var(--border); border-radius: 20px; font-size: 13px; color: var(--ink); }
+.member-role { font-size: 11px; color: var(--ink3); }
+.member-remove { cursor: pointer; color: var(--ink3); margin-left: 2px; font-size: 14px; }
+.member-remove:hover { color: var(--red); }
+.add-member-row { display: flex; gap: 8px; }
+.add-member-row input { flex: 1; font-family: var(--sans); font-size: 13px; color: var(--ink); background: var(--paper); border: 1px solid var(--border2); border-radius: 7px; padding: 8px 12px; outline: none; }
+.add-member-row input:focus { border-color: var(--gold); }
+.add-member-row select { font-family: var(--sans); font-size: 13px; color: var(--ink); background: var(--paper); border: 1px solid var(--border2); border-radius: 7px; padding: 8px 10px; outline: none; -webkit-appearance: none; }
+.add-member-btn { padding: 8px 14px; background: var(--ink); color: var(--paper); border: none; border-radius: 7px; font-family: var(--sans); font-size: 13px; cursor: pointer; white-space: nowrap; }
+.error-box { background: var(--red-bg); color: var(--red); border: 1px solid rgba(153,27,27,0.2); border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-top: 12px; }
+.loading-screen { text-align: center; padding: 80px 24px; color: var(--ink3); font-size: 14px; }
+.source-detail-field { animation: fadeIn 0.15s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- SUBMISSION VIEW -->
+<div id="submit-view">
+  <div class="page">
+    <div class="top-mark">
+      <div class="top-mark-dot"></div>
+      <span class="top-mark-text">Learning atoms</span>
+    </div>
+
+    <div id="form-loading" class="loading-screen">
+      <span class="mini-spin"></span> Loading...
+    </div>
+
+    <div id="form-screen" class="hidden">
+      <div class="form-hero">
+        <h1>What did you<br><em>learn</em> this week?</h1>
+        <p>Share one or more learning atoms — small, specific insights from your work, clients, reading, or conversations this week.</p>
+      </div>
+      <div class="atom-hint">
+        <strong>What's a learning atom?</strong>
+        A single insight you gained — from a client call, a book, a failed experiment, a negotiation, a conversation. Something you now know that you didn't before.
+      </div>
+      <div class="field">
+        <label>Your name</label>
+        <select id="name-select">
+          <option value="">Select your name...</option>
+        </select>
+      </div>
+      <div id="atoms-container"></div>
+      <button class="add-atom-btn" onclick="addAtom()">+ Add another learning atom</button>
+      <button class="submit-btn" onclick="submitAtoms()" id="submit-btn">Share my learnings →</button>
+      <div id="submit-error"></div>
+    </div>
+
+    <div id="success-screen" class="hidden">
+      <div class="success-screen">
+        <div class="success-icon">🌱</div>
+        <h2>Thank you!</h2>
+        <p>Your learnings are saved. They'll be included in this week's team digest.</p>
+        <div class="success-atoms" id="success-atoms"></div>
+        <button class="submit-another-btn" onclick="resetForm()">Submit more learnings</button>
+      </div>
+    </div>
+  </div>
+  <div class="admin-link" onclick="showAdmin()" title="Admin panel">⚙</div>
+</div>
+
+<!-- ADMIN VIEW -->
+<div id="admin-view" class="hidden">
+  <div class="page-wide">
+    <div class="top-mark">
+      <div class="top-mark-dot"></div>
+      <span class="top-mark-text">Admin · Learning atoms</span>
+      <span style="flex:1"></span>
+      <button onclick="showSubmit()" style="font-family:var(--sans);font-size:12px;color:var(--ink3);background:none;border:none;cursor:pointer;">← Back to form</button>
+    </div>
+    <div class="admin-header">
+      <div>
+        <h1>Digest generator</h1>
+        <p>Review submissions and generate the weekly WhatsApp digest</p>
+      </div>
+    </div>
+
+    <div class="team-manager">
+      <h3>Team members</h3>
+      <div class="team-members" id="team-members-list"></div>
+      <div class="add-member-row">
+        <input type="text" id="new-member-name" placeholder="Full name..." onkeydown="if(event.key==='Enter')addMember()">
+        <select id="new-member-role">
+          <option value="Partner">Partner</option>
+          <option value="Analyst">Analyst</option>
+        </select>
+        <button class="add-member-btn" onclick="addMember()">Add</button>
+      </div>
+    </div>
+
+    <div class="week-tabs" id="week-tabs"></div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stat-submissions">—</div><div class="stat-label">Submissions</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-atoms">—</div><div class="stat-label">Learning atoms</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-missing">—</div><div class="stat-label">Haven't submitted</div></div>
+    </div>
+
+    <div id="admin-loading" class="loading-screen" style="display:none;padding:40px;"><span class="mini-spin"></span> Loading submissions...</div>
+    <div class="submissions-grid" id="submissions-grid"></div>
+
+    <div class="digest-bar">
+      <div class="digest-bar-info">
+        <h3>Generate weekly digest</h3>
+        <p>Claude will synthesize all learnings into a WhatsApp-ready message</p>
+      </div>
+      <button class="digest-generate-btn" id="digest-btn" onclick="generateDigest()">Generate digest ✦</button>
+    </div>
+    <div class="digest-output" id="digest-output">
+      <div class="digest-output-head">
+        <span>Weekly digest — ready to paste in WhatsApp</span>
+        <button class="copy-btn" onclick="copyDigest()">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M2 10V2h8"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="digest-generating" id="digest-generating"><span class="mini-spin"></span>Synthesizing learnings with Claude...</div>
+      <div class="digest-text" id="digest-text"></div>
+    </div>
+    <div id="digest-error"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───
+const SOURCES = [
+  { id: 'client',     label: 'Client',       icon: '🤝', detailLabel: 'Which client or industry?',     detailPlaceholder: 'e.g. Grupo Bimbo, fintech startup in Monterrey...' },
+  { id: 'lead',       label: 'Lead/Sales',   icon: '💼', detailLabel: 'Which lead or deal context?',  detailPlaceholder: 'e.g. Negotiation with retail chain...' },
+  { id: 'book',       label: 'Book/Article', icon: '📚', detailLabel: 'Title or link',                detailPlaceholder: 'e.g. The Mom Test, https://...', isUrl: true },
+  { id: 'project',    label: 'Project',      icon: '🛠', detailLabel: 'Which project?',               detailPlaceholder: 'e.g. AI readiness diagnostic for Cemex...' },
+  { id: 'meeting',    label: 'Meeting',      icon: '💬', detailLabel: 'Which meeting or with whom?',  detailPlaceholder: 'e.g. Weekly partners call...' },
+  { id: 'experiment', label: 'Experiment',   icon: '🧪', detailLabel: 'What were you testing?',       detailPlaceholder: 'e.g. Testing a new proposal format...' },
+];
+
+// ─── STATE ───
+let team = [];
+let currentWeekSubs = [];
+let currentWeek = null;
+let atoms = [];
+let allWeeks = [];
+
+// ─── HELPERS ───
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function getWeekKey(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d); monday.setDate(diff);
+  return monday.toISOString().split('T')[0];
+}
+function getWeekLabel(key) {
+  const d = new Date(key + 'T12:00:00');
+  const end = new Date(d); end.setDate(d.getDate() + 6);
+  const fmt = dt => dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(d)} – ${fmt(end)}`;
+}
+function getCurrentWeekKey() { return getWeekKey(new Date()); }
+
+// ─── API ───
+async function apiGet(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function apiPost(path, body) {
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ─── INIT ───
+async function init() {
+  try {
+    team = await apiGet('/api/team');
+  } catch(e) { team = []; }
+  renderNameSelect();
+  addAtom();
+  document.getElementById('form-loading').classList.add('hidden');
+  document.getElementById('form-screen').classList.remove('hidden');
+}
+
+// ─── FORM ───
+function renderNameSelect() {
+  const sel = document.getElementById('name-select');
+  const val = sel.value;
+  sel.innerHTML = '<option value="">Select your name...</option>';
+  team.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.name;
+    opt.textContent = `${m.name} (${m.role})`;
+    sel.appendChild(opt);
+  });
+  if (val) sel.value = val;
+}
+
+function addAtom(data) {
+  const id = Date.now() + Math.random();
+  atoms.push({ id, what: data?.what||'', source: data?.source||'', sourceDetail: data?.sourceDetail||'', why: data?.why||'' });
+  renderAtoms();
+}
+
+function removeAtom(id) {
+  atoms = atoms.filter(a => a.id !== id);
+  renderAtoms();
+}
+
+function renderAtoms() {
+  const container = document.getElementById('atoms-container');
+  container.innerHTML = '';
+  atoms.forEach((atom, idx) => {
+    const srcMeta = SOURCES.find(s => s.id === atom.source);
+    const div = document.createElement('div');
+    div.className = 'atom-block';
+    div.innerHTML = `
+      <div class="atom-block-head">
+        <span class="atom-block-num">Learning atom ${idx + 1}</span>
+        ${atoms.length > 1 ? `<span class="atom-remove" onclick="removeAtom(${atom.id})">×</span>` : ''}
+      </div>
+      <div class="field" style="margin-bottom:14px;">
+        <label>What did you learn? <span>be specific</span></label>
+        <textarea placeholder="e.g. When a client says they don't have budget, they usually mean the value isn't clear yet..."
+          oninput="atoms[${idx}].what=this.value">${esc(atom.what)}</textarea>
+      </div>
+      <div class="field" style="margin-bottom:${srcMeta?'10px':'14px'};">
+        <label>Where did it come from?</label>
+        <div class="source-grid">
+          ${SOURCES.map(s => `<button class="source-btn ${atom.source===s.id?'selected':''}" onclick="setSource(${idx},'${s.id}',this.closest('.atom-block'))"><span class="source-icon">${s.icon}</span>${s.label}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field source-detail-field" id="detail-field-${idx}" style="margin-bottom:14px;${srcMeta?'':'display:none;'}">
+        <label>${srcMeta?srcMeta.detailLabel:''} <span>optional</span></label>
+        <input type="${srcMeta?.isUrl?'url':'text'}" placeholder="${srcMeta?srcMeta.detailPlaceholder:''}" value="${esc(atom.sourceDetail)}" oninput="atoms[${idx}].sourceDetail=this.value">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Why does it matter for the team? <span>one sentence</span></label>
+        <textarea placeholder="e.g. We should lead every proposal with a concrete ROI number before discussing price..."
+          rows="2" oninput="atoms[${idx}].why=this.value" style="min-height:68px;">${esc(atom.why)}</textarea>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function setSource(idx, src, block) {
+  atoms[idx].source = src;
+  atoms[idx].sourceDetail = '';
+  block.querySelectorAll('.source-btn').forEach(b => b.classList.remove('selected'));
+  event.target.closest('.source-btn').classList.add('selected');
+  const srcMeta = SOURCES.find(s => s.id === src);
+  const detailField = block.querySelector('.source-detail-field');
+  if (detailField && srcMeta) {
+    detailField.style.display = 'block';
+    detailField.querySelector('label').childNodes[0].textContent = srcMeta.detailLabel + ' ';
+    const inp = detailField.querySelector('input');
+    inp.placeholder = srcMeta.detailPlaceholder;
+    inp.type = srcMeta.isUrl ? 'url' : 'text';
+    inp.value = '';
+    inp.focus();
+  }
+}
+
+async function submitAtoms() {
+  const name = document.getElementById('name-select').value;
+  if (!name) { alert('Please select your name.'); return; }
+  const valid = atoms.filter(a => a.what.trim().length > 5);
+  if (!valid.length) { alert('Please add at least one learning atom.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  document.getElementById('submit-error').innerHTML = '';
+
+  try {
+    const role = team.find(m => m.name === name)?.role || '';
+    await apiPost('/api/submissions', {
+      name, role,
+      week: getCurrentWeekKey(),
+      atoms: valid.map(a => ({ what: a.what, source: a.source, sourceDetail: a.sourceDetail||'', why: a.why }))
+    });
+
+    const sa = document.getElementById('success-atoms');
+    sa.innerHTML = valid.map((a,i) => {
+      const srcMeta = SOURCES.find(s => s.id === a.source);
+      const detail = a.sourceDetail ? ` · ${a.sourceDetail}` : '';
+      return `<div class="success-atom">
+        <div class="success-atom-label">Atom ${i+1} · ${srcMeta?.label||'General'}${detail}</div>
+        <div class="success-atom-text">${esc(a.what)}</div>
+        ${a.why ? `<div style="font-size:12px;color:var(--ink3);margin-top:3px;font-style:italic;">${esc(a.why)}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    document.getElementById('form-screen').classList.add('hidden');
+    document.getElementById('success-screen').classList.remove('hidden');
+  } catch(err) {
+    document.getElementById('submit-error').innerHTML = `<div class="error-box">Could not save — please try again. (${err.message})</div>`;
+  }
+  btn.disabled = false; btn.textContent = 'Share my learnings →';
+}
+
+function resetForm() {
+  atoms = [];
+  addAtom();
+  document.getElementById('name-select').value = '';
+  document.getElementById('form-screen').classList.remove('hidden');
+  document.getElementById('success-screen').classList.add('hidden');
+}
+
+// ─── ADMIN ───
+function showAdmin() {
+  document.getElementById('submit-view').classList.add('hidden');
+  document.getElementById('admin-view').classList.remove('hidden');
+  loadAdminData();
+}
+function showSubmit() {
+  document.getElementById('admin-view').classList.add('hidden');
+  document.getElementById('submit-view').classList.remove('hidden');
+}
+
+async function loadAdminData() {
+  try { team = await apiGet('/api/team'); renderTeamManager(); } catch(e) {}
+  await loadWeeks();
+}
+
+async function loadWeeks() {
+  try {
+    const subs = await apiGet('/api/submissions');
+    allWeeks = [...new Set(subs.map(s => s.week))].sort().reverse();
+    const thisWeek = getCurrentWeekKey();
+    if (!allWeeks.includes(thisWeek)) allWeeks.unshift(thisWeek);
+    if (!currentWeek || !allWeeks.includes(currentWeek)) currentWeek = allWeeks[0];
+    renderWeekTabs();
+    await loadWeekSubmissions();
+  } catch(e) {
+    document.getElementById('submissions-grid').innerHTML = `<div class="error-box">Could not load submissions: ${e.message}</div>`;
+  }
+}
+
+async function loadWeekSubmissions() {
+  document.getElementById('admin-loading').style.display = 'block';
+  document.getElementById('submissions-grid').innerHTML = '';
+  try {
+    currentWeekSubs = await apiGet(`/api/submissions?week=${currentWeek}`);
+  } catch(e) { currentWeekSubs = []; }
+  document.getElementById('admin-loading').style.display = 'none';
+  renderSubmissions();
+}
+
+function renderWeekTabs() {
+  const thisWeek = getCurrentWeekKey();
+  document.getElementById('week-tabs').innerHTML = allWeeks.map(w => `
+    <button class="week-tab ${w===currentWeek?'active':''}" onclick="selectWeek('${w}')">
+      ${w===thisWeek?'🟢 ':''}${getWeekLabel(w)}
+    </button>`).join('');
+}
+
+function selectWeek(w) {
+  currentWeek = w;
+  document.getElementById('digest-output').style.display = 'none';
+  document.getElementById('digest-error').innerHTML = '';
+  renderWeekTabs();
+  loadWeekSubmissions();
+}
+
+function renderTeamManager() {
+  document.getElementById('team-members-list').innerHTML = team.map((m,i) => `
+    <div class="member-chip">
+      <span>${esc(m.name)}</span>
+      <span class="member-role">${esc(m.role)}</span>
+      <span class="member-remove" onclick="removeMember(${i})">×</span>
+    </div>`).join('');
+}
+
+async function addMember() {
+  const name = document.getElementById('new-member-name').value.trim();
+  const role = document.getElementById('new-member-role').value;
+  if (!name) return;
+  team.push({ name, role });
+  await apiPost('/api/team', team);
+  document.getElementById('new-member-name').value = '';
+  renderNameSelect();
+  renderTeamManager();
+}
+
+async function removeMember(i) {
+  team.splice(i, 1);
+  await apiPost('/api/team', team);
+  renderNameSelect();
+  renderTeamManager();
+}
+
+function renderSubmissions() {
+  const grid = document.getElementById('submissions-grid');
+  const submitted = new Set(currentWeekSubs.map(s => s.name));
+  const missing = team.filter(m => !submitted.has(m.name));
+  const totalAtoms = currentWeekSubs.reduce((sum, s) => sum + (s.atoms?.length||0), 0);
+
+  document.getElementById('stat-submissions').textContent = currentWeekSubs.length;
+  document.getElementById('stat-atoms').textContent = totalAtoms;
+  document.getElementById('stat-missing').textContent = missing.length;
+  document.getElementById('digest-btn').disabled = currentWeekSubs.length === 0;
+
+  if (!currentWeekSubs.length) {
+    grid.innerHTML = `<div class="no-submissions">No submissions yet for this week.<br><span style="font-size:12px;color:var(--ink3);">Share the form link with your team on Friday.</span></div>`;
+    return;
+  }
+  grid.innerHTML = currentWeekSubs.map(sub => {
+    const initials = sub.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    const time = new Date(sub.submitted_at).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    return `<div class="submission-card">
+      <div class="submission-head">
+        <div class="submission-avatar">${initials}</div>
+        <div><div class="submission-name">${esc(sub.name)}</div><div style="font-size:11px;color:var(--ink3);">${esc(sub.role)}</div></div>
+        <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span class="submission-time">${time}</span>
+          <span class="submission-source">${sub.atoms?.length||0} atom${sub.atoms?.length!==1?'s':''}</span>
+        </div>
+      </div>
+      ${(sub.atoms||[]).map((a,i) => `<div class="atom-row">
+        <div class="atom-label">Atom ${i+1} · ${SOURCES.find(s=>s.id===a.source)?.label||'General'}${a.sourceDetail?` — ${a.sourceDetail}`:''}</div>
+        <div class="atom-text">${esc(a.what)}</div>
+        ${a.why?`<div class="atom-why">"${esc(a.why)}"</div>`:''}
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function generateDigest() {
+  if (!currentWeekSubs.length) return;
+  document.getElementById('digest-output').style.display = 'block';
+  document.getElementById('digest-generating').style.display = 'block';
+  document.getElementById('digest-text').textContent = '';
+  document.getElementById('digest-error').innerHTML = '';
+  document.getElementById('digest-btn').disabled = true;
+
+  const weekLabel = getWeekLabel(currentWeek);
+  const missing = team.filter(m => !new Set(currentWeekSubs.map(s=>s.name)).has(m.name)).map(m=>m.name);
+  const atomList = currentWeekSubs.map(s =>
+    `${s.name} (${s.role}):\n` +
+    (s.atoms||[]).map((a,i) => {
+      const srcMeta = SOURCES.find(src=>src.id===a.source);
+      return `  Atom ${i+1}: ${a.what}\n  Source: ${srcMeta?.label||'General'}${a.sourceDetail?` (${a.sourceDetail})`:''}\n  Why it matters: ${a.why||'not specified'}`;
+    }).join('\n')
+  ).join('\n\n');
+
+  const prompt = `You are synthesizing a weekly team learning digest for a Latin American AI consulting firm. The team uses WhatsApp as their main communication channel.
+
+Here are all the learning atoms submitted this week (${weekLabel}):
+
+${atomList}
+
+${missing.length ? `Team members who didn't submit this week: ${missing.join(', ')}` : 'All team members submitted this week! 🎉'}
+
+Write a WhatsApp-ready weekly learning digest. Use WhatsApp formatting (bold with *asterisks*). Structure:
+
+Start with: 🧠 *Aprendizajes de la semana — ${weekLabel}*
+
+Then 2-4 themes you identify across submissions. For each theme:
+- Bold theme name with emoji
+- 2-4 bullet points synthesizing key insights (connect ideas, don't just copy)
+- Credit the person(s) whose learning contributed
+
+End with:
+- 💡 *Patrón de la semana* — one sentence connecting a theme across multiple people
+- 🔁 *Para reflexionar* — one question for the team to think about next week
+${missing.length ? `- A warm, friendly nudge for ${missing.join(', ')} to submit next week` : ''}
+
+Keep it warm, concise, in Spanish. Total: 300-450 words. Make it something people look forward to reading.`;
+
+  try {
+    const data = await apiPost('/api/digest', { prompt });
+    document.getElementById('digest-text').textContent = data.text;
+    document.getElementById('digest-generating').style.display = 'none';
+  } catch(err) {
+    document.getElementById('digest-generating').style.display = 'none';
+    document.getElementById('digest-output').style.display = 'none';
+    document.getElementById('digest-error').innerHTML = `<div class="error-box">Error generating digest: ${err.message}</div>`;
+  }
+  document.getElementById('digest-btn').disabled = false;
+}
+
+async function copyDigest() {
+  const text = document.getElementById('digest-text').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M2 10V2h8"/></svg> Copy'; }, 2000);
+  } catch(e) { alert('Select the text above and copy manually.'); }
+}
+
+init();
+</script>
+</body>
+</html>
