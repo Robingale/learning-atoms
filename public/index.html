@@ -38,8 +38,8 @@ body { font-family: var(--sans); background: var(--paper); color: var(--ink); mi
 .field select:focus, .field input:focus, .field textarea:focus { border-color: var(--gold); }
 .field textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
 .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2392400e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
-.source-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-@media (max-width: 420px) { .source-grid { grid-template-columns: repeat(2, 1fr); } }
+.source-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 480px) { .source-grid { grid-template-columns: repeat(2, 1fr); } }
 .source-btn { padding: 9px 8px; border: 1.5px solid var(--border2); border-radius: 8px; background: white; font-family: var(--sans); font-size: 12px; color: var(--ink2); cursor: pointer; text-align: center; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; }
 .source-btn:hover { border-color: var(--gold); color: var(--gold); }
 .source-btn.selected { border-color: var(--gold); background: var(--gold-light); color: var(--gold); font-weight: 500; }
@@ -241,11 +241,12 @@ body { font-family: var(--sans); background: var(--paper); color: var(--ink); mi
 // ─── CONFIG ───
 const SOURCES = [
   { id: 'client',     label: 'Client',       icon: '🤝', detailLabel: 'Which client or industry?',     detailPlaceholder: 'e.g. Grupo Bimbo, fintech startup in Monterrey...' },
-  { id: 'lead',       label: 'Lead/Sales',   icon: '💼', detailLabel: 'Which lead or deal context?',  detailPlaceholder: 'e.g. Negotiation with retail chain...' },
-  { id: 'book',       label: 'Book/Article', icon: '📚', detailLabel: 'Title or link',                detailPlaceholder: 'e.g. The Mom Test, https://...', isUrl: true },
-  { id: 'project',    label: 'Project',      icon: '🛠', detailLabel: 'Which project?',               detailPlaceholder: 'e.g. AI readiness diagnostic for Cemex...' },
-  { id: 'meeting',    label: 'Meeting',      icon: '💬', detailLabel: 'Which meeting or with whom?',  detailPlaceholder: 'e.g. Weekly partners call...' },
-  { id: 'experiment', label: 'Experiment',   icon: '🧪', detailLabel: 'What were you testing?',       detailPlaceholder: 'e.g. Testing a new proposal format...' },
+  { id: 'lead',       label: 'Lead/Sales',   icon: '💼', detailLabel: 'Which lead or deal context?',   detailPlaceholder: 'e.g. Negotiation with retail chain...' },
+  { id: 'book',       label: 'Book/Article', icon: '📚', detailLabel: 'Title or link',                  detailPlaceholder: 'e.g. The Mom Test, https://...', isUrl: true, buttonLabel: '📄 Read & suggest summary' },
+  { id: 'youtube',    label: 'YouTube',      icon: '▶️', detailLabel: 'Video URL',                      detailPlaceholder: 'https://youtube.com/watch?v=...', isUrl: true, buttonLabel: '▶️ Fetch & summarize video' },
+  { id: 'project',    label: 'Project',      icon: '🛠', detailLabel: 'Which project?',                detailPlaceholder: 'e.g. AI readiness diagnostic for Cemex...' },
+  { id: 'meeting',    label: 'Meeting',      icon: '💬', detailLabel: 'Which meeting or with whom?',   detailPlaceholder: 'e.g. Weekly partners call...' },
+  { id: 'experiment', label: 'Experiment',   icon: '🧪', detailLabel: 'What were you testing?',        detailPlaceholder: 'e.g. Testing a new proposal format...' },
 ];
 
 // ─── STATE ───
@@ -347,7 +348,7 @@ function renderAtoms() {
       <div class="field source-detail-field" id="detail-field-${idx}" style="margin-bottom:14px;${srcMeta?'':'display:none;'}">
         <label>${srcMeta?srcMeta.detailLabel:''} <span>optional</span></label>
         <input type="${srcMeta?.isUrl?'url':'text'}" placeholder="${srcMeta?srcMeta.detailPlaceholder:''}" value="${esc(atom.sourceDetail)}" oninput="atoms[${idx}].sourceDetail=this.value">
-        ${srcMeta?.isUrl ? `<button class="summarize-btn" id="summarize-btn-${idx}" onclick="summarizeArticle(${idx})">✨ Read article &amp; suggest summary</button>` : ''}
+        ${srcMeta?.isUrl ? `<button class="summarize-btn" id="summarize-btn-${idx}" onclick="summarizeArticle(${idx})">${srcMeta.buttonLabel || '✨ Read & suggest summary'}</button>` : ''}
       </div>
       <div class="field" style="margin-bottom:0;">
         <label>Why does it matter for the team? <span>one sentence</span></label>

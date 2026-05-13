@@ -11,7 +11,145 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Anthropic API key not configured' });
 
-  const prompt = `You are helping a business consultant extract a learning from a document or article.
+  const prompt = `You are helping a business consultant extract a learning from a document, article, or video.
+
+Read this content and extract the single most valuable insight for someone working in AI adoption consulting in Latin America.
+
+Return ONLY a valid JSON object — no markdown, no backticks:
+{
+  "what": "The single most important insight. Be specific and concrete, not generic. 2-3 sentences max.",
+  "why": "One sentence on why this matters specifically for an AI consulting team working with Latin American companies."
+}`;
+
+  try {
+    if (isYouTube(url)) {
+      // Fetch transcript using youtube-transcript package
+      const { YoutubeTranscript } = require('youtube-transcript');
+      let transcript;
+      try {
+        const entries = await YoutubeTranscript.fetchTranscript(url);
+        transcript = entries.map(e => e.text).join(' ');
+      } catch(e) {
+        throw new Error('Could not fetch video transcript. The video may have captions disabled or be private.');
+      }
+      if (!transcript || transcript.length < 50) {
+        throw new Error('This video has no captions available.');
+      }
+
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{
+            role: 'user',
+            content: `${prompt}\n\nVideo transcript:\n${transcript.slice(0, 9000)}`,
+          }],
+        }),
+      });
+      const claudeData = await claudeRes.json();
+      if (!claudeRes.ok) throw new Error(claudeData?.error?.message || 'Claude API error');
+      return res.status(200).json(parseClaudeResponse(claudeData));
+
+    } else if (await detectPdf(url)) {
+      // Fetch PDF as binary and send to Claude natively
+      const pdfRes = await fetch(url);
+      if (!pdfRes.ok) throw new Error(`Could not download PDF (${pdfRes.status})`);
+      const contentLength = pdfRes.headers.get('content-length');
+      if (contentLength && parseInt(contentLength) > 20 * 1024 * 1024) {
+        throw new Error('PDF is too large (max 20MB). Try a smaller file.');
+      }
+      const buffer = await pdfRes.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString('base64');
+
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+              { type: 'text', text: prompt },
+            ],
+          }],
+        }),
+      });
+      const claudeData = await claudeRes.json();
+      if (!claudeRes.ok) throw new Error(claudeData?.error?.message || 'Claude API error');
+      return res.status(200).json(parseClaudeResponse(claudeData));
+
+    } else {
+      // Use Jina Reader for web articles
+      const jinaUrl = `https://r.jina.ai/${url}`;
+      const articleRes = await fetch(jinaUrl, {
+        headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' },
+      });
+      if (!articleRes.ok) throw new Error(`Could not fetch article (${articleRes.status})`);
+      const articleText = await articleRes.text();
+      if (!articleText || articleText.length < 100) throw new Error('Article content is too short or empty');
+
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{
+            role: 'user',
+            content: `${prompt}\n\nArticle content:\n${articleText.slice(0, 9000)}`,
+          }],
+        }),
+      });
+      const claudeData = await claudeRes.json();
+      if (!claudeRes.ok) throw new Error(claudeData?.error?.message || 'Claude API error');
+      return res.status(200).json(parseClaudeResponse(claudeData));
+    }
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+function isYouTube(url) {
+  return url.includes('youtube.com/watch') || url.includes('youtu.be/');
+}
+
+async function detectPdf(url) {
+  const urlLower = url.toLowerCase();
+  if (urlLower.includes('.pdf') || urlLower.includes('export=download')) return true;
+  try {
+    const headRes = await fetch(url, { method: 'HEAD' });
+    const ct = headRes.headers.get('content-type') || '';
+    return ct.includes('application/pdf');
+  } catch {
+    return false;
+  }
+}
+
+function parseClaudeResponse(data) {
+  const raw = data.content?.map(b => b.text || '').join('') || '';
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('Could not parse Claude response');
+  const parsed = JSON.parse(match[0]);
+  return { what: parsed.what || '', why: parsed.why || '' };
+}
+
 
 Read this content and extract the single most valuable insight for someone working in AI adoption consulting in Latin America.
 
